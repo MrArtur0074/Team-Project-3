@@ -1,9 +1,9 @@
 bl_info = {
-    "name": "Engine Export",
+    "name": "Engine Exporter",
     "author": "Your Name",
     "version": (1, 0, 0),
     "blender": (4, 1, 0),
-    "location": "View3D > Sidebar > Mesh Tools",
+    "location": "View3D > Sidebar > Engine Exporter",
     "description": """Add-on for exporting to game engines. 
                     It supports multiple export formats (FBX, GLTF, OBJ), 
                     material handling, and game engine configurations.""",
@@ -14,8 +14,37 @@ bl_info = {
 
 import bpy
 import bmesh
-from bpy.props import FloatProperty, IntProperty, PointerProperty, CollectionProperty
+import os
+from bpy.props import FloatProperty, IntProperty, PointerProperty, CollectionProperty, EnumProperty, StringProperty
 from bpy.types import Operator, Panel, PropertyGroup
+
+# ---------------------------------------------------
+# Utility Functions
+# ---------------------------------------------------
+def ensure_folder_exists(folder_path):
+    """Ensure the export folder exists, creating it if necessary."""
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+def export_selected_objects(export_format, export_folder):
+    """Export selected objects in the specified format."""
+    selected_objects = bpy.context.selected_objects
+    if not selected_objects:
+        print("No objects selected for export.")
+        return
+    
+    ensure_folder_exists(export_folder)
+
+    for obj in selected_objects:
+        filepath = os.path.join(export_folder, f"{obj.name}.{export_format.lower()}")
+        print(f"Exporting {obj.name} as {export_format} to {filepath}")
+        
+        if export_format == 'FBX':
+            bpy.ops.export_scene.fbx(filepath=filepath, use_selection=True)
+        elif export_format == 'GLTF':
+            bpy.ops.export_scene.gltf_export(filepath=filepath, export_format='GLB', use_selection=True)
+        elif export_format == 'OBJ':
+            bpy.ops.export_scene.obj(filepath=filepath, use_selection=True, use_materials=False)
 
 # ---------------------------------------------------
 # Operator: Create Convex Hull
@@ -175,7 +204,7 @@ class OBJECT_OT_remove_lod(Operator):
 
         self.report({'INFO'}, "Last LOD object removed")
         return {'FINISHED'}
-        
+
 # ---------------------------------------------------
 # Operator: Apply All Transforms
 # ---------------------------------------------------
@@ -199,8 +228,6 @@ class OBJECT_OT_apply_all_transforms(Operator):
 # ---------------------------------------------------
 # Operator: Merge Duplicate Vertices
 # ---------------------------------------------------
-
-
 class OBJECT_OT_merge_vertices_by_distance(Operator):
     bl_idname = "object.merge_vertices_by_distance"
     bl_label = "Merge Duplicate Vertices"
@@ -217,8 +244,6 @@ class OBJECT_OT_merge_vertices_by_distance(Operator):
         if not obj or obj.type != 'MESH':
             self.report({'ERROR'}, "Active object is not a mesh")
             return {'CANCELLED'}
-        
-
 
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type="VERT")
@@ -227,27 +252,57 @@ class OBJECT_OT_merge_vertices_by_distance(Operator):
 
         recalculated_threshold = 0.001 / context.scene.unit_settings.scale_length
         bpy.ops.mesh.remove_doubles(threshold=recalculated_threshold, use_unselected=False)
-        
 
-        
         return {'FINISHED'}
 
+# ---------------------------------------------------
+# Operator: Export Format
+# ---------------------------------------------------
+class OBJECT_OT_export_format(Operator):
+    bl_idname = "object.export_format"
+    bl_label = "Choose Export Format and Folder"
+    
+    export_format: EnumProperty(
+        name="Export Format",
+        description="Choose the format for export",
+        items=[
+            ('FBX', "FBX", "Export in FBX format"),
+            ('GLTF', "GLTF", "Export in GLTF format"),
+            ('OBJ', "OBJ", "Export in OBJ format")
+        ],
+        default='FBX'
+    )
+
+    filepath: StringProperty(subtype='DIR_PATH')
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        export_folder = self.filepath
+        export_format = self.export_format
+        print(f"Chosen format: {export_format}")
+        print(f"Chosen export folder: {export_folder}")
+        export_selected_objects(export_format, export_folder)
+        return {'FINISHED'}
 
 # ---------------------------------------------------
 # UI Panel in the 3D View Sidebar
 # ---------------------------------------------------
 class VIEW3D_PT_mesh_tools(Panel):
-    """Panel for Mesh Tools and LOD management"""
+    """Panel for Engine Exporter and LOD management"""
     bl_label = "Engine Exporter"
     bl_idname = "VIEW3D_PT_mesh_tools"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Mesh Tools"
+    bl_category = "Engine Exporter"
 
     def draw(self, context):
         layout = self.layout
 
-        # Operators for convex hull, triangulation, and normals correction.
+        # Engine Exporter Section
+        layout.label(text="Engine Exporter:")
         layout.operator("object.create_convex_hull", icon='MESH_CUBE')
         layout.operator("object.triangulate_mesh", icon='MESH_DATA')
         layout.operator("object.correct_normals", icon='TRACKING')
@@ -257,9 +312,7 @@ class VIEW3D_PT_mesh_tools(Panel):
 
         # LOD Management Section
         layout.label(text="LOD Manager:")
-
         row = layout.row(align=True)
-        # Use just icons for add ("+") and remove ("–") buttons.
         row.operator("object.add_lod", text="", icon='ADD')
         row.operator("object.remove_lod", text="", icon='REMOVE')
 
@@ -279,9 +332,11 @@ class VIEW3D_PT_mesh_tools(Panel):
                         row.prop(mod, "ratio", text="Decimation Ratio")
         else:
             layout.label(text="No LOD objects found.")
-            
-            # Apply All Transforms Button
-        
+        layout.separator()
+
+        # Export Section
+        layout.label(text="Export Tools:")
+        layout.operator("object.export_format", text="Export Selected Objects")
 
 # ---------------------------------------------------
 # Registration
@@ -295,6 +350,7 @@ classes = [
     OBJECT_OT_remove_lod,
     OBJECT_OT_apply_all_transforms,
     OBJECT_OT_merge_vertices_by_distance,
+    OBJECT_OT_export_format,
     VIEW3D_PT_mesh_tools,
 ]
 

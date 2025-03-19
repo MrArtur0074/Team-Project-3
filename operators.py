@@ -3,6 +3,12 @@ import bmesh
 import os
 from bpy.props import *
 from .utils import *
+from bpy.props import (
+    BoolProperty,
+    IntProperty,
+    FloatProperty,
+    StringProperty
+)
 
 class OBJECT_OT_create_convex_hull(bpy.types.Operator):
     bl_idname = "object.create_convex_hull"
@@ -58,6 +64,21 @@ class OBJECT_OT_correct_normals(bpy.types.Operator):
         bpy.ops.mesh.normals_make_consistent(inside=False)
         bpy.ops.object.mode_set(mode='OBJECT')
         return {'FINISHED'}
+    
+class OBJECT_OT_merge_vertices(bpy.types.Operator):
+    bl_idname = "object.merge_vertices"
+    bl_label = "Merge Vertices"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        settings = context.scene.engine_tools_settings
+        threshold = settings.merge_distance / context.scene.unit_settings.scale_length
+        
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=threshold)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        return {'FINISHED'}
 
 class OBJECT_OT_add_lod(bpy.types.Operator):
     bl_idname = "object.add_lod"
@@ -101,19 +122,32 @@ class OBJECT_OT_remove_lod(bpy.types.Operator):
         base_obj.lod_items.remove(len(base_obj.lod_items)-1)
         return {'FINISHED'}
 
-class OBJECT_OT_merge_vertices(bpy.types.Operator):
-    bl_idname = "object.merge_vertices"
-    bl_label = "Merge Vertices"
+class OBJECT_OT_apply_lod_modifiers(bpy.types.Operator):
+    bl_idname = "object.apply_lod_modifiers"
+    bl_label = "Apply LOD Modifiers"
+    bl_description = "Apply decimate modifiers and lock LOD ratios"
     bl_options = {'REGISTER', 'UNDO'}
 
+    lod_index: IntProperty(default=-1)  # Index of the LOD to apply
+
     def execute(self, context):
-        settings = context.scene.engine_tools_settings
-        threshold = settings.merge_distance / context.scene.unit_settings.scale_length
-        
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.mesh.remove_doubles(threshold=threshold)
-        bpy.ops.object.mode_set(mode='OBJECT')
+        obj = context.active_object
+        if self.lod_index < 0 or self.lod_index >= len(obj.lod_items):
+            self.report({'ERROR'}, "Invalid LOD index")
+            return {'CANCELLED'}
+
+        lod_item = obj.lod_items[self.lod_index]
+        if lod_item.lod_object:
+            # Apply and remove decimate modifier
+            for mod in lod_item.lod_object.modifiers:
+                if mod.type == 'DECIMATE':
+                    bpy.ops.object.modifier_apply(
+                        {"object": lod_item.lod_object}, 
+                        modifier=mod.name
+                    )
+            # Remove decimate modifier after applying
+            lod_item.lod_object.modifiers.remove(mod)
+            
         return {'FINISHED'}
 
 class OBJECT_OT_export_selected(bpy.types.Operator):
@@ -123,10 +157,18 @@ class OBJECT_OT_export_selected(bpy.types.Operator):
 
     def execute(self, context):
         settings = context.scene.engine_tools_settings
+        
+        # Add safety check for modifiers
+        if settings.export_apply_modifiers:
+            for obj in context.selected_objects:
+                if obj.type == 'MESH':
+                    for mod in obj.modifiers:
+                        bpy.ops.object.modifier_apply(modifier=mod.name)
+
         export_selected_objects(
             settings.export_format,
             settings.export_folder,
-            apply_modifiers=settings.export_apply_modifiers
+            apply_modifiers=False 
         )
         return {'FINISHED'}
 
@@ -156,6 +198,7 @@ classes = (
     OBJECT_OT_correct_normals,
     OBJECT_OT_add_lod,
     OBJECT_OT_remove_lod,
+    OBJECT_OT_apply_lod_modifiers,
     OBJECT_OT_merge_vertices,
     OBJECT_OT_export_selected,
     OBJECT_OT_batch_export

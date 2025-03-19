@@ -11,12 +11,14 @@ bl_info = {
 from . import operators, properties, ui, utils
 
 def register():
+    from . import properties, operators, ui
     utils.register()
     properties.register()
     operators.register()
     ui.register()
 
 def unregister():
+    from . import ui, operators, properties
     ui.unregister()
     operators.unregister()
     properties.unregister()

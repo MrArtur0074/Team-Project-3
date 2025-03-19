@@ -21,16 +21,18 @@ class VIEW3D_PT_engine_tools(Panel):
         box.operator("object.merge_vertices", icon='VERTEXSEL')
         
         # LOD System
-        box = layout.box()
-        box.label(text="LOD Management")
-        row = box.row()
-        row.operator("object.add_lod", icon='ADD')
-        row.operator("object.remove_lod", icon='REMOVE')
-        
-        if context.active_object and context.active_object.lod_items:
-            for idx, item in enumerate(context.active_object.lod_items):
-                if obj := item.lod_object:
-                    box.label(text=f"LOD {idx+1}: {obj.name}", icon='MOD_DECIM')
+        obj = context.active_object
+        if obj and hasattr(obj, 'lod_items'):
+            box = layout.box()
+            box.label(text="LOD Management")
+            row = box.row()
+            row.operator("object.add_lod", icon='ADD')
+            row.operator("object.remove_lod", icon='REMOVE')
+            
+            if obj.lod_items:
+                for idx, item in enumerate(obj.lod_items):
+                    if item.lod_object:
+                        box.label(text=f"LOD {idx+1}: {item.lod_object.name}", icon='MOD_DECIM')
         
         # Export System
         box = layout.box()

@@ -29,7 +29,7 @@ class OBJECT_OT_create_convex_hull(Operator):
         obj = context.active_object
         if not obj or obj.type != 'MESH':
             self.report({'ERROR'}, "Active object is not a mesh")
-            return 'CANCELLED'
+            return {'CANCELLED'}
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
@@ -177,6 +177,63 @@ class OBJECT_OT_remove_lod(Operator):
         return {'FINISHED'}
         
 # ---------------------------------------------------
+# Operator: Apply All Transforms
+# ---------------------------------------------------
+class OBJECT_OT_apply_all_transforms(Operator):
+    bl_idname = "object.apply_all_transforms"
+    bl_label = "Apply All Transforms"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj or obj.type != 'MESH':
+            self.report({'ERROR'}, "Active object is not a mesh")
+            return {'CANCELLED'}
+
+        # Apply location, rotation, and scale
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+        self.report({'INFO'}, "All transforms applied")
+        return {'FINISHED'}
+
+# ---------------------------------------------------
+# Operator: Merge Duplicate Vertices
+# ---------------------------------------------------
+
+
+class OBJECT_OT_merge_vertices_by_distance(Operator):
+    bl_idname = "object.merge_vertices_by_distance"
+    bl_label = "Merge Duplicate Vertices"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    merge_distance: FloatProperty(
+        name="Merge Distance",
+        description="The maximum distance between vertices to merge them",
+        default=0.001,
+    ) # type: ignore
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj or obj.type != 'MESH':
+            self.report({'ERROR'}, "Active object is not a mesh")
+            return {'CANCELLED'}
+        
+
+
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_mode(type="VERT")
+        bpy.ops.mesh.select_more()
+        bpy.ops.mesh.select_all(action='SELECT')
+
+        recalculated_threshold = 0.001 / context.scene.unit_settings.scale_length
+        bpy.ops.mesh.remove_doubles(threshold=recalculated_threshold, use_unselected=False)
+        
+
+        
+        return {'FINISHED'}
+
+
+# ---------------------------------------------------
 # UI Panel in the 3D View Sidebar
 # ---------------------------------------------------
 class VIEW3D_PT_mesh_tools(Panel):
@@ -194,7 +251,8 @@ class VIEW3D_PT_mesh_tools(Panel):
         layout.operator("object.create_convex_hull", icon='MESH_CUBE')
         layout.operator("object.triangulate_mesh", icon='MESH_DATA')
         layout.operator("object.correct_normals", icon='TRACKING')
-
+        layout.operator("object.apply_all_transforms", icon='FILE_TICK')
+        layout.operator("object.merge_vertices_by_distance", icon='SNAP_VERTEX')
         layout.separator()
 
         # LOD Management Section
@@ -221,6 +279,9 @@ class VIEW3D_PT_mesh_tools(Panel):
                         row.prop(mod, "ratio", text="Decimation Ratio")
         else:
             layout.label(text="No LOD objects found.")
+            
+            # Apply All Transforms Button
+        
 
 # ---------------------------------------------------
 # Registration
@@ -232,6 +293,8 @@ classes = [
     LODItem,
     OBJECT_OT_add_lod,
     OBJECT_OT_remove_lod,
+    OBJECT_OT_apply_all_transforms,
+    OBJECT_OT_merge_vertices_by_distance,
     VIEW3D_PT_mesh_tools,
 ]
 

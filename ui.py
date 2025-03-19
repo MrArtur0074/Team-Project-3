@@ -1,58 +1,55 @@
 import bpy
 from bpy.types import Panel
 
-class VIEW3D_PT_mesh_tools(Panel):
-    bl_label = "Engine Exporter"
-    bl_idname = "VIEW3D_PT_mesh_tools"
+class VIEW3D_PT_engine_tools(Panel):
+    bl_label = "Engine Tools"
+    bl_idname = "VIEW3D_PT_engine_tools"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Mesh Tools"
+    bl_category = "Engine Tools"
 
     def draw(self, context):
         layout = self.layout
+        settings = context.scene.engine_tools_settings
         
         # Mesh Tools
-        layout.label(text="Mesh Processing:")
-        col = layout.column()
-        col.operator("object.create_convex_hull", icon='MESH_CUBE')
-        col.operator("object.triangulate_mesh", icon='MESH_DATA')
-        col.operator("object.correct_normals", icon='NORMALS_FACE')
-        col.operator("object.apply_all_transforms", icon='ORIENTATION_GLOBAL')
-        col.operator("object.merge_vertices_by_distance", icon='VERTEXSEL')
+        box = layout.box()
+        box.label(text="Mesh Processing")
+        box.operator("object.create_convex_hull", icon='MESH_CUBE')
+        box.operator("object.triangulate_mesh", icon='MESH_DATA')
+        box.operator("object.correct_normals", icon='NORMALS_FACE')
+        box.operator("object.merge_vertices", icon='VERTEXSEL')
         
-        # LOD Management
-        layout.separator()
-        layout.label(text="LOD System:")
-        row = layout.row(align=True)
+        # LOD System
+        box = layout.box()
+        box.label(text="LOD Management")
+        row = box.row()
         row.operator("object.add_lod", icon='ADD')
         row.operator("object.remove_lod", icon='REMOVE')
         
-        if lod_items := context.active_object.lod_items:
-            box = layout.box()
-            for i, item in enumerate(lod_items):
+        if context.active_object and context.active_object.lod_items:
+            for idx, item in enumerate(context.active_object.lod_items):
                 if obj := item.lod_object:
-                    row = box.row()
-                    row.label(text=f"LOD {i+1}: {obj.name}")
-                    if mod := next((m for m in obj.modifiers if m.type == 'DECIMATE'), None):
-                        row.prop(mod, "ratio", text="")
+                    box.label(text=f"LOD {idx+1}: {obj.name}", icon='MOD_DECIM')
         
         # Export System
-        layout.separator()
-        layout.label(text="Export Settings:")
         box = layout.box()
-        box.prop(context.scene, "selected_export_format", text="Format")
-        box.prop(context.scene, "export_folder", text="Folder")
-        layout.operator("object.export_format", icon='EXPORT')
+        box.label(text="Export Settings")
+        box.prop(settings, "export_format", text="Format")
+        box.prop(settings, "export_folder", text="Folder")
+        box.prop(settings, "export_apply_modifiers", toggle=1)
+        row = box.row()
+        row.operator("export.engine_selected", icon='EXPORT')
+        row.operator("export.batch_engine", icon='EXPORT')
 
         # Preferences
-        layout.separator()
-        layout.label(text="Preferences:")
-        prefs_box = layout.box()
-        prefs_box.prop(context.scene, "lod_default_ratio")
-        prefs_box.prop(context.scene, "merge_distance")
+        box = layout.box()
+        box.label(text="Preferences")
+        box.prop(settings, "lod_default_ratio")
+        box.prop(settings, "merge_distance")
 
 def register():
-    bpy.utils.register_class(VIEW3D_PT_mesh_tools)
+    bpy.utils.register_class(VIEW3D_PT_engine_tools)
 
 def unregister():
-    bpy.utils.unregister_class(VIEW3D_PT_mesh_tools)
+    bpy.utils.unregister_class(VIEW3D_PT_engine_tools)

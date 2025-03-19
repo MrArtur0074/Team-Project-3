@@ -1,7 +1,8 @@
 import bpy
 import bmesh
-from bpy.props import FloatProperty, EnumProperty, StringProperty
-from .utils import export_selected_objects
+import os
+from bpy.props import *
+from .utils import *
 
 class OBJECT_OT_create_convex_hull(bpy.types.Operator):
     bl_idname = "object.create_convex_hull"
@@ -65,6 +66,8 @@ class OBJECT_OT_add_lod(bpy.types.Operator):
 
     def execute(self, context):
         base_obj = context.active_object
+        settings = context.scene.engine_tools_settings
+        
         if not base_obj or base_obj.type != 'MESH':
             self.report({'ERROR'}, "Select a mesh object")
             return {'CANCELLED'}
@@ -75,7 +78,7 @@ class OBJECT_OT_add_lod(bpy.types.Operator):
         context.collection.objects.link(lod_obj)
 
         mod = lod_obj.modifiers.new(name="LOD_Decimate", type='DECIMATE')
-        mod.ratio = context.scene.lod_default_ratio
+        mod.ratio = settings.lod_default_ratio
 
         item = base_obj.lod_items.add()
         item.lod_object = lod_obj
@@ -98,75 +101,70 @@ class OBJECT_OT_remove_lod(bpy.types.Operator):
         base_obj.lod_items.remove(len(base_obj.lod_items)-1)
         return {'FINISHED'}
 
-class OBJECT_OT_apply_all_transforms(bpy.types.Operator):
-    bl_idname = "object.apply_all_transforms"
-    bl_label = "Apply Transforms"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-        return {'FINISHED'}
-
-class OBJECT_OT_merge_vertices_by_distance(bpy.types.Operator):
-    bl_idname = "object.merge_vertices_by_distance"
+class OBJECT_OT_merge_vertices(bpy.types.Operator):
+    bl_idname = "object.merge_vertices"
     bl_label = "Merge Vertices"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        threshold = context.scene.merge_distance / context.scene.unit_settings.scale_length
+        settings = context.scene.engine_tools_settings
+        threshold = settings.merge_distance / context.scene.unit_settings.scale_length
+        
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.mesh.remove_doubles(threshold=threshold)
         bpy.ops.object.mode_set(mode='OBJECT')
         return {'FINISHED'}
 
-class OBJECT_OT_export_format(bpy.types.Operator):
-    bl_idname = "object.export_format"
+class OBJECT_OT_export_selected(bpy.types.Operator):
+    bl_idname = "export.engine_selected"
     bl_label = "Export Selected"
     bl_options = {'REGISTER', 'UNDO'}
 
-    filepath: StringProperty(subtype='DIR_PATH')
-    export_format: EnumProperty(
-        items=[
-            ('FBX', "FBX", "Export as FBX"),
-            ('GLTF', "GLTF", "Export as GLTF"),
-            ('OBJ', "OBJ", "Export as OBJ")
-        ],
-        default='FBX'
-    )
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
     def execute(self, context):
-        export_selected_objects(self.export_format, self.filepath)
+        settings = context.scene.engine_tools_settings
+        export_selected_objects(
+            settings.export_format,
+            settings.export_folder,
+            apply_modifiers=settings.export_apply_modifiers
+        )
         return {'FINISHED'}
 
+class OBJECT_OT_batch_export(bpy.types.Operator):
+    bl_idname = "export.batch_engine"
+    bl_label = "Batch Export"
+    
+    def execute(self, context):
+        settings = context.scene.engine_tools_settings
+        original_selection = context.selected_objects
+        
+        for obj in bpy.data.objects:
+            if obj.type == 'MESH':
+                select_only(obj)
+                export_selected_objects(
+                    settings.export_format,
+                    settings.export_folder,
+                    apply_modifiers=settings.export_apply_modifiers
+                )
+        
+        select_objects(original_selection)
+        return {'FINISHED'}
+
+classes = (
+    OBJECT_OT_create_convex_hull,
+    OBJECT_OT_triangulate_mesh,
+    OBJECT_OT_correct_normals,
+    OBJECT_OT_add_lod,
+    OBJECT_OT_remove_lod,
+    OBJECT_OT_merge_vertices,
+    OBJECT_OT_export_selected,
+    OBJECT_OT_batch_export
+)
+
 def register():
-    classes = [
-        OBJECT_OT_create_convex_hull,
-        OBJECT_OT_triangulate_mesh,
-        OBJECT_OT_correct_normals,
-        OBJECT_OT_add_lod,
-        OBJECT_OT_remove_lod,
-        OBJECT_OT_apply_all_transforms,
-        OBJECT_OT_merge_vertices_by_distance,
-        OBJECT_OT_export_format
-    ]
     for cls in classes:
         bpy.utils.register_class(cls)
 
 def unregister():
-    classes = [
-        OBJECT_OT_create_convex_hull,
-        OBJECT_OT_triangulate_mesh,
-        OBJECT_OT_correct_normals,
-        OBJECT_OT_add_lod,
-        OBJECT_OT_remove_lod,
-        OBJECT_OT_apply_all_transforms,
-        OBJECT_OT_merge_vertices_by_distance,
-        OBJECT_OT_export_format
-    ]
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

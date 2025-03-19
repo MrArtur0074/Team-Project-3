@@ -11,6 +11,7 @@ from bpy.props import (
     PointerProperty,
     CollectionProperty
 )
+from .operators import OBJECT_OT_apply_lod_modifiers
 
 class LODItem(PropertyGroup):
     lod_object: PointerProperty(

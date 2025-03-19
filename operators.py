@@ -10,6 +10,34 @@ from bpy.props import (
     StringProperty
 )
 
+class OBJECT_OT_apply_lod_modifiers(bpy.types.Operator):
+    bl_idname = "object.apply_lod_modifiers"
+    bl_label = "Apply LOD Modifiers"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    lod_index: IntProperty(default=-1)
+    
+    def execute(self, context):
+        obj = context.active_object
+        if not obj or self.lod_index < 0 or self.lod_index >= len(obj.lod_items):
+            self.report({'ERROR'}, "Invalid LOD index")
+            return {'CANCELLED'}
+        
+        lod_item = obj.lod_items[self.lod_index]
+        if lod_item.lod_object:
+            for mod in lod_item.lod_object.modifiers[:]:
+                if mod.type == 'DECIMATE':
+                    try:
+                        bpy.ops.object.modifier_apply(
+                            {"object": lod_item.lod_object}, 
+                            modifier=mod.name
+                        )
+                    except RuntimeError as e:
+                        self.report({'ERROR'}, f"Apply failed: {str(e)}")
+                    finally:
+                        lod_item.lod_object.modifiers.remove(mod)
+        return {'FINISHED'}
+
 class OBJECT_OT_create_convex_hull(bpy.types.Operator):
     bl_idname = "object.create_convex_hull"
     bl_label = "Create Convex Hull"
@@ -121,35 +149,24 @@ class OBJECT_OT_remove_lod(bpy.types.Operator):
             bpy.data.objects.remove(last_lod)
         base_obj.lod_items.remove(len(base_obj.lod_items)-1)
         return {'FINISHED'}
-
-class OBJECT_OT_apply_lod_modifiers(bpy.types.Operator):
-    bl_idname = "object.apply_lod_modifiers"
-    bl_label = "Apply LOD Modifiers"
-    bl_description = "Apply decimate modifiers and lock LOD ratios"
+    
+class OBJECT_OT_select_lod_object(bpy.types.Operator):
+    bl_idname = "object.select_lod_object"
+    bl_label = "Select LOD Object"
     bl_options = {'REGISTER', 'UNDO'}
-
-    lod_index: IntProperty(default=-1)  # Index of the LOD to apply
+    
+    lod_index: IntProperty(default=-1)
 
     def execute(self, context):
         obj = context.active_object
-        if self.lod_index < 0 or self.lod_index >= len(obj.lod_items):
-            self.report({'ERROR'}, "Invalid LOD index")
-            return {'CANCELLED'}
-
-        lod_item = obj.lod_items[self.lod_index]
-        if lod_item.lod_object:
-            # Apply and remove decimate modifier
-            for mod in lod_item.lod_object.modifiers:
-                if mod.type == 'DECIMATE':
-                    bpy.ops.object.modifier_apply(
-                        {"object": lod_item.lod_object}, 
-                        modifier=mod.name
-                    )
-            # Remove decimate modifier after applying
-            lod_item.lod_object.modifiers.remove(mod)
-            
+        if obj and self.lod_index < len(obj.lod_items):
+            lod_obj = obj.lod_items[self.lod_index].lod_object
+            if lod_obj:
+                bpy.ops.object.select_all(action='DESELECT')
+                lod_obj.select_set(True)
+                context.view_layer.objects.active = lod_obj
         return {'FINISHED'}
-
+    
 class OBJECT_OT_export_selected(bpy.types.Operator):
     bl_idname = "export.engine_selected"
     bl_label = "Export Selected"
@@ -193,12 +210,13 @@ class OBJECT_OT_batch_export(bpy.types.Operator):
         return {'FINISHED'}
 
 classes = (
+    OBJECT_OT_apply_lod_modifiers,
     OBJECT_OT_create_convex_hull,
     OBJECT_OT_triangulate_mesh,
     OBJECT_OT_correct_normals,
     OBJECT_OT_add_lod,
     OBJECT_OT_remove_lod,
-    OBJECT_OT_apply_lod_modifiers,
+    OBJECT_OT_select_lod_object,
     OBJECT_OT_merge_vertices,
     OBJECT_OT_export_selected,
     OBJECT_OT_batch_export
@@ -206,8 +224,10 @@ classes = (
 
 def register():
     for cls in classes:
-        bpy.utils.register_class(cls)
+        if not hasattr(bpy.types, cls.__name__):  # Prevent duplicate registration
+            bpy.utils.register_class(cls)
 
 def unregister():
     for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+        if hasattr(bpy.types, cls.__name__):  # Prevent unregistration errors
+            bpy.utils.unregister_class(cls)

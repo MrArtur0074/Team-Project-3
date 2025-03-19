@@ -24,32 +24,53 @@ class VIEW3D_PT_engine_tools(Panel):
         col.operator("object.correct_normals", icon='NORMALS_FACE')
         col.operator("object.merge_vertices", icon='AUTOMERGE_ON')
 
-        # LOD Management
+       # LOD Management
         lod_box = layout.box()
         lod_box.label(text="LOD System", icon='MOD_DECIM')
-        
+
+        obj = context.active_object
         if obj and hasattr(obj, 'lod_items'):
+            # Add/Remove buttons
             row = lod_box.row()
             row.operator("object.add_lod", icon='ADD')
             row.operator("object.remove_lod", icon='REMOVE')
 
-            # In the LOD section:
+            # LOD Items list
             if obj.lod_items:
                 for idx, item in enumerate(obj.lod_items):
-                    if item.lod_object:
-                        row = lod_box.row()
-                        row.label(text=f"LOD {idx+1}: {item.lod_object.name}")
+                    if not item.lod_object:
+                        continue
+
+                    box = lod_box.box()
+                    row = box.row()
+                    
+                    # Object name and status
+                    row.label(text=f"LOD {idx + 1}: {item.lod_object.name}")
+                    
+                    # Modifier controls
+                    if "LOD_Decimate" in item.lod_object.modifiers:
+                        decimate_mod = item.lod_object.modifiers["LOD_Decimate"]
                         
-                        if "LOD_Decimate" in item.lod_object.modifiers:
-                            row.prop(item.lod_object.modifiers["LOD_Decimate"], "ratio", text="")
-                            apply_op = row.operator(
-                                "object.apply_lod_modifiers",  # Use bl_idname as string
-                                text="", 
-                                icon='CHECKMARK'
-                            )
-                            apply_op.lod_index = idx
-                        else:
-                            row.label(text="Applied", icon='LOCKED')
+                        # Ratio and Apply button
+                        sub_row = box.row(align=True)
+                        sub_row.prop(decimate_mod, "ratio", text="Ratio", slider=True)
+                        
+                        # Apply button operator
+                        apply_op = sub_row.operator(
+                            "object.apply_lod_modifiers",
+                            text="",
+                            icon='CHECKMARK'
+                        )
+                        apply_op.lod_index = idx
+                    else:
+                        # Show locked state
+                        row.label(text="Applied", icon='LOCKED')
+
+                    # Extra safety: show object selection button
+                    box.operator(
+                        "object.select_lod_object",
+                        text="Select LOD Object"
+                    ).lod_index = idx
 
         # Export System
         export_box = layout.box()

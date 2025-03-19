@@ -1,28 +1,35 @@
 bl_info = {
     "name": "Engine Exporter Pro",
-    "author": "Your Name",
-    "version": (2, 0, 1),
-    "blender": (4, 1, 0),
-    "location": "View3D > Sidebar > Engine Tools",
+    "author": "BEAT",
+    "version": (2, 0, 2),
+    "blender": (4, 3, 0),
+    "location": "View3D > Sidebar > Engine Export",
     "description": "Comprehensive game engine export toolkit with optimization features",
     "category": "Import-Export",
 }
+bl_info = {
+    "name": "Engine Tools",
+    "author": "Your Name",
+    "version": (1, 0),
+    "blender": (4, 3, 2),
+    "location": "View3D > Sidebar",
+    "description": "Game engine tools",
+    "category": "Object",
+}
 
-from . import operators, properties, ui, utils
+from . import properties
+from . import operators
+from . import ui
 
 def register():
-    from . import properties, operators, ui
-    utils.register()
     properties.register()
     operators.register()
     ui.register()
 
 def unregister():
-    from . import ui, operators, properties
     ui.unregister()
     operators.unregister()
     properties.unregister()
-    utils.unregister()
 
 if __name__ == "__main__":
     register()

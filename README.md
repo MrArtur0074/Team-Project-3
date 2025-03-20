@@ -20,7 +20,7 @@ LOD: Automatically generate levels of detail (LOD) for performance optimization.
 
 ### Method 1: Install from ZIP
 1. Download the latest release from the [Releases](https://github.com/MrArtur0074/Team-Project-3.git) section.
-2. Open Blender and go to `Edit` → `Preferences` → `Add-ons`.
+2. Open Blender and go to `Edit` → `Preferences` → `Get Extensions` → `Install from disk`.
 3. Click `Install...` and select the downloaded `.zip` file.
 4. Enable the addon by checking the box next to its name.
 5. Save preferences and restart Blender if needed.
@@ -34,7 +34,7 @@ LOD: Automatically generate levels of detail (LOD) for performance optimization.
    - **Windows:** `C:\Users\YourName\AppData\Roaming\Blender Foundation\Blender\<version>\scripts\addons\`
    - **Mac:** `~/Library/Application Support/Blender/<version>/scripts/addons/`
    - **Linux:** `~/.config/blender/<version>/scripts/addons/`
-3. Open Blender and go to `Edit` → `Preferences` → `Add-ons`.
+3. Open Blender and go to `Edit` → `Preferences` → `Get Extensions` → `Install from disk`.
 4. Search for the addon name and enable it.
 
 ## Usage

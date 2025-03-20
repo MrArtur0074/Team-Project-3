@@ -7,15 +7,6 @@ bl_info = {
     "description": "Comprehensive game engine export toolkit with optimization features",
     "category": "Import-Export",
 }
-bl_info = {
-    "name": "Engine Tools",
-    "author": "Your Name",
-    "version": (1, 0),
-    "blender": (4, 3, 2),
-    "location": "View3D > Sidebar",
-    "description": "Game engine tools",
-    "category": "Object",
-}
 
 from . import properties
 from . import operators

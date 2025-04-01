@@ -14,6 +14,7 @@ class OBJECT_OT_apply_lod_modifiers(bpy.types.Operator):
     bl_idname = "object.apply_lod_modifiers"
     bl_label = "Apply LOD Modifiers"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Creates LODs(level of detail) for selected mesh"
     
     lod_index: IntProperty(default=-1)
     
@@ -42,6 +43,7 @@ class OBJECT_OT_create_convex_hull(bpy.types.Operator):
     bl_idname = "object.create_convex_hull"
     bl_label = "Create Convex Hull"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Creates convex hull for selected object"
 
     def execute(self, context):
         obj = context.active_object
@@ -70,6 +72,7 @@ class OBJECT_OT_triangulate_mesh(bpy.types.Operator):
     bl_idname = "object.triangulate_mesh"
     bl_label = "Triangulate Mesh"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Converts quads to triangles"
 
     def execute(self, context):
         obj = context.active_object
@@ -85,6 +88,7 @@ class OBJECT_OT_correct_normals(bpy.types.Operator):
     bl_idname = "object.correct_normals"
     bl_label = "Correct Normals"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Corrects(flips) normals"
 
     def execute(self, context):
         bpy.ops.object.mode_set(mode='EDIT')
@@ -97,6 +101,7 @@ class OBJECT_OT_merge_vertices(bpy.types.Operator):
     bl_idname = "object.merge_vertices"
     bl_label = "Merge Vertices"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Merges verticles that are located too close too each other"
 
     def execute(self, context):
         settings = context.scene.engine_tools_settings
@@ -112,6 +117,7 @@ class OBJECT_OT_add_lod(bpy.types.Operator):
     bl_idname = "object.add_lod"
     bl_label = "Add LOD"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Adds new LOD object"
 
     def execute(self, context):
         base_obj = context.active_object
@@ -137,6 +143,7 @@ class OBJECT_OT_remove_lod(bpy.types.Operator):
     bl_idname = "object.remove_lod"
     bl_label = "Remove LOD"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Removes last created LOD object"
 
     def execute(self, context):
         base_obj = context.active_object
@@ -154,6 +161,7 @@ class OBJECT_OT_select_lod_object(bpy.types.Operator):
     bl_idname = "object.select_lod_object"
     bl_label = "Select LOD Object"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Selects a LOD object"
     
     lod_index: IntProperty(default=-1)
 
@@ -171,6 +179,7 @@ class OBJECT_OT_export_selected(bpy.types.Operator):
     bl_idname = "export.engine_selected"
     bl_label = "Export Selected"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Exports selected objects in selected format"
 
     def execute(self, context):
         settings = context.scene.engine_tools_settings
@@ -192,6 +201,7 @@ class OBJECT_OT_export_selected(bpy.types.Operator):
 class OBJECT_OT_batch_export(bpy.types.Operator):
     bl_idname = "export.batch_engine"
     bl_label = "Batch Export"
+    bl_description = "Exports selected objects as seperate files in selected format"
     
     def execute(self, context):
         settings = context.scene.engine_tools_settings
@@ -205,7 +215,6 @@ class OBJECT_OT_batch_export(bpy.types.Operator):
                     settings.export_folder,
                     apply_modifiers=settings.export_apply_modifiers
                 )
-        
         select_objects(original_selection)
         return {'FINISHED'}
 

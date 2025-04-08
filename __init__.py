@@ -8,6 +8,7 @@ bl_info = {
     "category": "Import-Export",
 }
 
+from . import material_baker
 from . import properties
 from . import operators
 from . import ui
@@ -16,11 +17,13 @@ def register():
     properties.register()
     operators.register()
     ui.register()
+    material_baker.register()
 
 def unregister():
     ui.unregister()
     operators.unregister()
     properties.unregister()
+    material_baker.unregister()
 
 if __name__ == "__main__":
     register()

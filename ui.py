@@ -91,6 +91,18 @@ class VIEW3D_PT_engine_tools(Panel):
         prefs_box.prop(settings, "lod_default_ratio", slider=True)
         prefs_box.prop(settings, "merge_distance")
 
+        # Material Baker
+        scene = context.scene
+
+        baker_box = layout.box()
+        baker_box.label(text="Material Baker", icon='TEXTURE')
+
+        baker_box.prop(scene, "material_baker_bake_type", text="Bake Type")
+        baker_box.prop(scene, "material_baker_resolution", text="Resolution")
+        baker_box.prop(scene, "material_baker_image_format", text="Image Format")
+        baker_box.prop(scene, "material_baker_filepath", text="File Path")
+        baker_box.operator("object.material_bake", text="Bake Material", icon='RENDER_RESULT')
+
 def register():
     bpy.utils.register_class(VIEW3D_PT_engine_tools)
 

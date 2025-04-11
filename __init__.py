@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Engine Exporter Pro",
     "author": "BEAT",
-    "version": (2, 0, 2),
+    "version": (2, 0, 5),
     "blender": (4, 3, 0),
     "location": "View3D > Sidebar > Engine Export",
     "description": "Comprehensive game engine export toolkit with optimization features",

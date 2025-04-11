@@ -72,6 +72,7 @@ class VIEW3D_PT_engine_tools(Panel):
                         text="Select LOD Object"
                     ).lod_index = idx
 
+
         # Export System
         export_box = layout.box()
         export_box.label(text="Export Tools", icon='EXPORT')
@@ -98,10 +99,16 @@ class VIEW3D_PT_engine_tools(Panel):
         baker_box.label(text="Material Baker", icon='TEXTURE')
 
         baker_box.prop(scene, "material_baker_bake_type", text="Bake Type")
+
+        # Optional info label if 'ALL' is selected
+        if scene.material_baker_bake_type == 'ALL':
+            baker_box.label(text="All texture maps will be exported!", icon='INFO')
+
         baker_box.prop(scene, "material_baker_resolution", text="Resolution")
         baker_box.prop(scene, "material_baker_image_format", text="Image Format")
         baker_box.prop(scene, "material_baker_filepath", text="File Path")
         baker_box.operator("object.material_bake", text="Bake Material", icon='RENDER_RESULT')
+
 
 def register():
     bpy.utils.register_class(VIEW3D_PT_engine_tools)
